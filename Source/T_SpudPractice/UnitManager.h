@@ -5,19 +5,21 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "SaveableInterface.h"
-#include "MyUnitActor.generated.h"
+#include "UnitManager.generated.h"
 
-class UCharacterObj;
+class AMyUnitActor;
 class AMyRegionActor;
 
+
+
 UCLASS()
-class T_SPUDPRACTICE_API AMyUnitActor : public AActor, public ISaveableInterface
+class T_SPUDPRACTICE_API AUnitManager : public AActor, public ISaveableInterface
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AMyUnitActor();
+	AUnitManager();
 
 protected:
 	// Called when the game starts or when spawned
@@ -27,17 +29,35 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+	TArray<AMyUnitActor*> All_UnitActors;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+	TArray<AMyRegionActor*> All_RegionActors;
+
+
+	UFUNCTION()
+		void SpawnUnit(FTransform T, float HP);
+
+
 	virtual void SaveData_Implementation(UMySaveGame* SaveGameRef) override;
 	virtual void LoadData_Implementation(UMySaveGame* SaveGameRef) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
-	float HP = 100;
+	void SpawnRegions();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
-		UCharacterObj* CharacterObj = nullptr;
+		TSubclassOf<AMyRegionActor> RegionClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
-		AMyRegionActor* CurrentRegion = nullptr;
+		TSubclassOf<AMyUnitActor> UnitClass;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
-		FTransform LastTransform;
+		bool bIsLoadingFromSave = false;
+
+	UFUNCTION()
+	AMyRegionActor* GetClosestRegion(const FVector& Location) const;
+
+
+
+
 };

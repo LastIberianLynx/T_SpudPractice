@@ -4,6 +4,7 @@
 #include "MyGameInstance.h"
 #include "MySaveGame.h"
 #include "SaveableInterface.h"
+#include "MyGameInstance.h"
 #include "GameFramework/AsyncActionHandleSaveGame.h"
 
 
@@ -103,7 +104,8 @@ void UMyGameInstance::LoadGame(bool bAsync) {
 		UE_LOG(LogTemp, Warning, TEXT("No save game found in slot '%s'."), *SaveGameSlotName);
 		return;
 	}
-
+	bIsLoadingFromSave = true;
+	
 	if (bAsync)
 	{
 		UAsyncActionHandleSaveGame* LoadAction = UAsyncActionHandleSaveGame::AsyncLoadGameFromSlot(

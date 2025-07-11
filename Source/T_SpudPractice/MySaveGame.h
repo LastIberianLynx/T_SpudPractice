@@ -9,6 +9,32 @@
 /**
  * 
  */
+class AMyUnitActor;
+
+USTRUCT()
+struct FSerializedActorData
+{
+	GENERATED_BODY()
+
+		//UPROPERTY()
+		//TSubclassOf<AActor> ActorClass;
+		//can be stored in the actor class.
+		UPROPERTY()
+		UClass* ActorClass;
+
+		UPROPERTY()
+		FString ActorPath;
+
+		UPROPERTY()
+		FString SavedName;
+
+		UPROPERTY()
+		FString ReferencePathName1;
+
+		UPROPERTY()
+		TArray<uint8> Data;
+};
+
 UCLASS()
 class T_SPUDPRACTICE_API UMySaveGame : public USaveGame
 {
@@ -21,4 +47,17 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
 	float SavedHP;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+		UObject* Character;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+		TArray<AMyUnitActor*> SavedUnits;
+
+	UPROPERTY(SaveGame)
+		TArray<FSerializedActorData> SerializedUnitActors;
+
+	UPROPERTY(SaveGame)
+		TArray<FSerializedActorData> SerializedRegions;
+
 };

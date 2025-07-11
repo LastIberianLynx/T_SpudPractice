@@ -48,6 +48,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void LoadGame(bool bAsync);
 
+	UPROPERTY()
+		bool bIsLoadingFromSave = false;
+
 
 
 private:
@@ -66,6 +69,8 @@ private:
 
 	UPROPERTY()
 		UAsyncActionHandleSaveGame* CurrentAsyncSaveHandle;
+
+
 
 
 	

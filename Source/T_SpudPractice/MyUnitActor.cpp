@@ -4,6 +4,7 @@
 #include "MyUnitActor.h"
 #include "MySaveGame.h"
 #include "MyGameInstance.h"
+#include "CharacterObj.h"
 
 // Sets default values
 AMyUnitActor::AMyUnitActor()
@@ -21,7 +22,16 @@ void AMyUnitActor::BeginPlay()
 	UMyGameInstance* MyGI = Cast<UMyGameInstance>(GetGameInstance());
 	if (MyGI)
 	{
+		if(MyGI->bIsLoadingFromSave)
 		MyGI->RequestLoad(this);
+	}
+
+
+	if (!CharacterObj)
+	{
+		CharacterObj = NewObject<UCharacterObj>(this, UCharacterObj::StaticClass());
+		CharacterObj->CharacterName = TEXT("Knight");
+		CharacterObj->Level = 1;
 	}
 	
 }
@@ -37,7 +47,15 @@ void AMyUnitActor::SaveData_Implementation(UMySaveGame* SaveGameRef)
 {
 	if (!IsValid(SaveGameRef))
 		return;
+	
+	return;
+	return;
+	return;
+
 	SaveGameRef->SavedHP = HP;
+	//CharacterObj->Getname
+	CharacterObj->Rename(*CharacterObj->GetName(), SaveGameRef);
+	SaveGameRef->Character = CharacterObj;
 
 
 }
@@ -46,5 +64,17 @@ void AMyUnitActor::LoadData_Implementation(UMySaveGame* SaveGameRef)
 {
 	if (!IsValid(SaveGameRef))
 		return;
-	HP = SaveGameRef->SavedHP;
+
+		return;
+		return;
+		return;
+	
+		HP = SaveGameRef->SavedHP;
+	//CharacterObj = SaveGameRef->Character;
+	if (!IsValid(SaveGameRef->Character))
+		return;
+	//FString Yo = "Yo";
+	SaveGameRef->Character->Rename(*SaveGameRef->Character->GetName(), this);
+	CharacterObj = Cast<UCharacterObj>(SaveGameRef->Character);
+
 }
