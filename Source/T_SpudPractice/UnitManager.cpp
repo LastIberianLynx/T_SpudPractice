@@ -5,6 +5,7 @@
 #include "MySaveGame.h"
 #include "MyRegionActor.h"
 #include "MyUnitActor.h"
+#include "CharacterObj.h"
 #include "MyGameInstance.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
@@ -22,8 +23,16 @@ void AUnitManager::BeginPlay()
 {
 	Super::BeginPlay();
     UMyGameInstance* MyGI = Cast<UMyGameInstance>(GetGameInstance());
-    if(!MyGI->bIsLoadingFromSave)
+    if (!MyGI->bIsLoadingFromSave) {
+        for (int32 i = 0; i < 2; ++i) {
+            UCharacterObj* CharacterObj = NewObject<UCharacterObj>(this, UCharacterObj::StaticClass());
+            CharacterObj->CharacterName = TEXT("FootSoldier");
+            CharacterObj->Level = 1;
+            CharacterObj->UnitManager = this;
+            FreeCharacters_Arr.Add(CharacterObj);
+        }
     SpawnRegions();
+    }
     else
         MyGI->RequestLoad(this);
 }
@@ -48,9 +57,38 @@ void AUnitManager::SaveData_Implementation(UMySaveGame* SaveGameRef)
 
     SaveGameRef->SerializedUnitActors.Empty();
 
+    {
+
+        //SaveGameRef->
+        FSerializedActorData Entry;
+
+        //this->LastTransform = Unit->GetActorTransform();
+
+        Entry.ActorClass = this->GetClass();
+        Entry.ActorPath = this->GetPathName();
+
+        FMemoryWriter Writer(Entry.Data, true);
+        FObjectAndNameAsStringProxyArchive Ar(Writer, false);
+        Ar.ArIsSaveGame = true;
+        this->Serialize(Ar);
+
+        SaveGameRef->SavedUnitManager = Entry;
+    }
+
     for (AMyUnitActor* Unit : All_UnitActors)
     {
         if (!IsValid(Unit)) continue;
+
+        Unit->CharacterObj;
+        FSerializedActorData EntryCharacter;
+
+        EntryCharacter.ActorClass = Unit->CharacterObj->GetClass();
+        EntryCharacter.ActorPath = Unit->CharacterObj->GetPathName();
+
+        FMemoryWriter Writer2(EntryCharacter.Data, true);
+        FObjectAndNameAsStringProxyArchive Ar2(Writer2, false);
+        Ar2.ArIsSaveGame = true;
+        Unit->CharacterObj->Serialize(Ar2);
 
         FSerializedActorData Entry;
         //Entry.ActorClass = Unit->GetClass();
@@ -69,10 +107,17 @@ void AUnitManager::SaveData_Implementation(UMySaveGame* SaveGameRef)
         Ar.ArIsSaveGame = true;
         Unit->Serialize(Ar);
 
+
         SaveGameRef->SerializedUnitActors.Add(Entry);
+        SaveGameRef->SerializedCharacters.Add(EntryCharacter);
+
+
+
     }
 
     SaveGameRef->SerializedRegions.Empty();
+
+    
 
 
     for (AMyRegionActor* Region : All_RegionActors)
@@ -96,6 +141,24 @@ void AUnitManager::SaveData_Implementation(UMySaveGame* SaveGameRef)
 
         SaveGameRef->SerializedRegions.Add(Entry);
     }
+
+
+    for (UCharacterObj* FreeCharacter : FreeCharacters_Arr)
+    {
+        if (!IsValid(FreeCharacter)) continue;
+
+        FSerializedActorData Entry;
+
+        Entry.ActorClass = FreeCharacter->GetClass();
+        Entry.ActorPath = FreeCharacter->GetPathName();
+
+        FMemoryWriter Writer(Entry.Data, true);
+        FObjectAndNameAsStringProxyArchive Ar(Writer, false);
+        Ar.ArIsSaveGame = true;
+        FreeCharacter->Serialize(Ar);
+
+        SaveGameRef->SerializedFreeCharacters.Add(Entry);
+    }
 }
 
 void AUnitManager::LoadData_Implementation(UMySaveGame* SaveGameRef)
@@ -112,9 +175,20 @@ void AUnitManager::LoadData_Implementation(UMySaveGame* SaveGameRef)
     TMap<FString, AMyRegionActor*> ID_Region_Map;
     // === PASS 1 - SPAWN + RENAME ===
 
-    // Spawn Units
-    for (const FSerializedActorData& LoadedData : SaveGameRef->SerializedUnitActors)
     {
+        FSerializedActorData& LoadedData = SaveGameRef->SavedUnitManager;
+
+        FString IDName;// old actor path (old reference)
+
+        LoadedData.ActorPath.Split(".", nullptr, &IDName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+        this->Rename(*IDName);
+    }
+
+
+    // Spawn Units
+    for (int32 i = 0; i < SaveGameRef->SerializedUnitActors.Num(); ++i)
+    {
+        FSerializedActorData& LoadedData = SaveGameRef->SerializedUnitActors[i];
         AActor* CurrentActor = UGameplayStatics::BeginDeferredActorSpawnFromClass(this, LoadedData.ActorClass, FTransform(), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
         CurrentActor->FinishSpawning(FTransform());
@@ -124,6 +198,18 @@ void AUnitManager::LoadData_Implementation(UMySaveGame* SaveGameRef)
         LoadedData.ActorPath.Split(".", nullptr, &IDName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
         CurrentActor->Rename(*IDName);
         All_UnitActors.Add(Cast<AMyUnitActor>(CurrentActor));
+
+        FSerializedActorData& LoadedDataCharacter = SaveGameRef->SerializedCharacters[i];
+
+        UCharacterObj* NewObj = NewObject<UCharacterObj>(CurrentActor, LoadedDataCharacter.ActorClass);
+        if (!NewObj)
+            return;
+        FString IDNameCharacter;
+        if (LoadedDataCharacter.ActorPath.Split(TEXT("."), nullptr, &IDNameCharacter, ESearchCase::IgnoreCase, ESearchDir::FromEnd))
+        {
+            NewObj->Rename(*IDNameCharacter);
+        }
+        //Cast<AMyUnitActor>(CurrentActor)->CharacterObj = NewObj;
     }
 
     // Spawn Regions
@@ -141,9 +227,24 @@ void AUnitManager::LoadData_Implementation(UMySaveGame* SaveGameRef)
 
     }
 
+    for (const FSerializedActorData& LoadedData : SaveGameRef->SerializedFreeCharacters)
+    {
+        UCharacterObj* NewObj = NewObject<UCharacterObj>(this, LoadedData.ActorClass);
+
+        FString IDName;// old actor path (old reference)
+
+        LoadedData.ActorPath.Split(".", nullptr, &IDName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+        NewObj->Rename(*IDName);
+        FreeCharacters_Arr.Add(NewObj);
+
+    }
+
+
     // === PASS 2 - DESERIALIZE ===
 
     // Deserialize Units
+
+
     for (int32 i = 0; i < SaveGameRef->SerializedUnitActors.Num(); ++i)
     {
         FMemoryReader Reader(SaveGameRef->SerializedUnitActors[i].Data, true);
@@ -153,6 +254,19 @@ void AUnitManager::LoadData_Implementation(UMySaveGame* SaveGameRef)
         All_UnitActors[i]->Serialize(Ar);
         All_UnitActors[i]->SetActorTransform(All_UnitActors[i]->LastTransform);
     }
+
+    for (int32 i = 0; i < SaveGameRef->SerializedCharacters.Num(); ++i)
+    {
+        FMemoryReader Reader(SaveGameRef->SerializedCharacters[i].Data, true);
+        FObjectAndNameAsStringProxyArchive Ar(Reader, true);
+        Ar.ArIsSaveGame = true;
+
+        All_UnitActors[i]->CharacterObj->Serialize(Ar);
+    }
+
+
+
+
 
     // Deserialize Regions
     for (int32 i = 0; i < SaveGameRef->SerializedRegions.Num(); ++i)
@@ -168,6 +282,32 @@ void AUnitManager::LoadData_Implementation(UMySaveGame* SaveGameRef)
 
 
 
+    for (int32 i = 0; i < FreeCharacters_Arr.Num(); ++i)
+    {
+        FSerializedActorData& LoadedData = SaveGameRef->SerializedFreeCharacters[i];
+        FMemoryReader Reader(LoadedData.Data, true);
+        FObjectAndNameAsStringProxyArchive Ar(Reader, true);
+        Ar.ArIsSaveGame = true;
+
+        FreeCharacters_Arr[i]->Serialize(Ar);
+
+    }
+
+    {
+        // === PASS 2 - DESERIALIZE ===
+        FMemoryReader Reader(SaveGameRef->SavedUnitManager.Data, true);
+        FObjectAndNameAsStringProxyArchive Ar(Reader, true);
+        Ar.ArIsSaveGame = true;
+
+        this->Serialize(Ar);
+    }
+
+
+    int32 finalBreakpoint = 0;
+
+    /////////////////
+
+    /////////////////
 
 
 

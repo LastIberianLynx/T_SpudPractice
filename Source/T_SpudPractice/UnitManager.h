@@ -9,6 +9,7 @@
 
 class AMyUnitActor;
 class AMyRegionActor;
+class UCharacterObj;
 
 
 
@@ -45,14 +46,17 @@ public:
 
 	void SpawnRegions();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TSubclassOf<AMyRegionActor> RegionClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TSubclassOf<AMyUnitActor> UnitClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
 		bool bIsLoadingFromSave = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		TArray<UCharacterObj*> FreeCharacters_Arr;
 
 	UFUNCTION()
 	AMyRegionActor* GetClosestRegion(const FVector& Location) const;

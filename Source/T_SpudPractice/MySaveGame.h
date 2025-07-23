@@ -48,8 +48,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
 	float SavedHP;
 
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
 		UObject* Character;
+
+
+	UPROPERTY( SaveGame)
+		FSerializedActorData SavedUnitManager;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
 		TArray<AMyUnitActor*> SavedUnits;
@@ -60,4 +65,9 @@ public:
 	UPROPERTY(SaveGame)
 		TArray<FSerializedActorData> SerializedRegions;
 
+	UPROPERTY()
+		TArray<FSerializedActorData> SerializedCharacters;
+
+	UPROPERTY()
+		TArray<FSerializedActorData> SerializedFreeCharacters;
 };

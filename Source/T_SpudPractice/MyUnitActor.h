@@ -9,6 +9,7 @@
 
 class UCharacterObj;
 class AMyRegionActor;
+class AUnitManager;
 
 UCLASS()
 class T_SPUDPRACTICE_API AMyUnitActor : public AActor, public ISaveableInterface
@@ -34,10 +35,14 @@ public:
 	float HP = 100;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
-		UCharacterObj* CharacterObj = nullptr;
+		UCharacterObj* CharacterObj;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
 		AMyRegionActor* CurrentRegion = nullptr;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
 		FTransform LastTransform;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+		AUnitManager* UnitManager;
+
 };

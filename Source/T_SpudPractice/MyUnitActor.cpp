@@ -5,6 +5,7 @@
 #include "MySaveGame.h"
 #include "MyGameInstance.h"
 #include "CharacterObj.h"
+#include "UnitManager.h"
 
 // Sets default values
 AMyUnitActor::AMyUnitActor()
@@ -22,17 +23,27 @@ void AMyUnitActor::BeginPlay()
 	UMyGameInstance* MyGI = Cast<UMyGameInstance>(GetGameInstance());
 	if (MyGI)
 	{
-		if(MyGI->bIsLoadingFromSave)
-		MyGI->RequestLoad(this);
+		if (MyGI->bIsLoadingFromSave) {
+			MyGI->RequestLoad(this);
+			return;
+		}
 	}
 
+
+
+	if (!UnitManager) {
+		UnitManager = Cast<AUnitManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AUnitManager::StaticClass()));
+	}
 
 	if (!CharacterObj)
 	{
 		CharacterObj = NewObject<UCharacterObj>(this, UCharacterObj::StaticClass());
 		CharacterObj->CharacterName = TEXT("Knight");
 		CharacterObj->Level = 1;
+		CharacterObj->Unit = this;
+		CharacterObj->UnitManager = UnitManager;
 	}
+
 	
 }
 
